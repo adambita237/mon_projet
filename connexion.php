@@ -1,147 +1,27 @@
-
 <?php
-
 session_start();
 
-$BDD = mysql_connect("localhost","root","");  // Connexion ‡ la base de donnÈes.
-            mysql_select_db("campuskamer");       // SÈlection de la base de donnÈes utilisÈe.
-
-// On met les variables utilisÈs du script PHP ‡ FALSE.
-$error = FALSE;
-
-$connexionOK = FALSE;
-
-// On regarde si l'utilisateur a bien utilisÈ le module de connexion pour traiter les donnÈes.
-if(isset($_POST["connexion"])){
-   
-   // On regarde si tout les champs sont remplis. Sinon on lui affiche un message d'erreur.   
-   if($_POST["pseudo"] == NULL OR $_POST["passe"] == NULL){
-      
-      $error = TRUE;
-      
-      $errorMSG = "Vous devez remplir tout les champs !";
-      
-   }
-   
-   // Sinon si tout les champs sont remplis alors on regarde si le nom de compte rentrÈ existe bien dans la base de donnÈes.
-   else{
-      
-      $sql = "SELECT pseudo FROM users WHERE pseudo = '".$_POST["pseudo"]."' ";
-      
-      $req = mysql_query($sql);
-      
-      // Si oui, on continue le script...      
-      if($sql){
-         
-         // On sÈlectionne toute les donnÈes de l'utilisateur dans la base de donnÈes.   
-         $sql = "SELECT * FROM users WHERE pseudo = '".$_POST["pseudo"]."' ";
-      
-         $req = mysql_query($sql);
-         
-         // Si la requÍte SQL c'est bien passÈ...      
-         if($sql){
-         
-            // On rÈcupËre toute les donnÈes de l'utilisateur dans la base de donnÈes.
-            $donnees = mysql_fetch_assoc($req);
-            
-            // Si le mot de passe entrÈ ‡ la mÍme valeur que celui de la base de donnÈes, on l'autorise a se connecter...         
-            if($_POST["passe"] == $donnees["passe"]){
-            
-               $connexionOK = TRUE;
-               
-               $connexionMSG = "Connexion au site rÈussie. Vous Ítes dÈsormais connectÈ !";
-               
-               $_SESSION["pseudo"] = $_POST["pseudo"];
-               
-               $_SESSION["passe"] = $_POST["passe"];
-            
-            }
-            
-            // Sinon on lui affiche un message d'erreur.
-            else{
-            
-               $error = TRUE;
-            
-               $errorMSG = "Nom de compte ou mot de passe incorrect !";
-            
-            }
-         
-         }
-         
-         // Sinon on lui affiche un message d'erreur.      
-         else{
-         
-            $error = TRUE;
-         
-            $errorMSG = "Nom de compte ou mot de passe incorrect !";
-         
-         }
-      
-      }
-      
-      // Sinon on lui affiche un message d'erreur.      
-      else{
-         
-         $error = TRUE;
-         
-         $errorMSG = "Nom de compte ou mot de passe incorrect !";
-         
-      }
-   
-   }
-   
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: index.php#inscription');
+    exit;
 }
 
-mysql_close($BDD);
+$email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
+$password = $_POST['password'] ?? '';
+$role = $_POST['role'] ?? 'beneficiaire';
 
-?>
+if (!$email || strlen($password) < 8) {
+    $_SESSION['flash_error'] = 'Veuillez fournir un email valide et un mot de passe de 8 caract√®res minimum.';
+    header('Location: index.php#inscription');
+    exit;
+}
 
-<?php if(isset($_SESSION["pseudo"]) AND isset($_SESSION["passe"])){
-   
-   echo '<p style="color:green">Bienvenue <strong>".$_SESSION["pseudo"]."</strong></p>';
-   
-} ?>
+$_SESSION['user'] = [
+    'email' => $email,
+    'role' => $role,
+    'created_at' => date('c'),
+];
 
-<?php if($error == TRUE){ echo "<p align="center" style="color:red"><strong>".$errorMSG."</strong></p>"; } ?>
-
-<?php if($connexionOK == TRUE){ echo "<p align="center" style="color:green"><strong>".$connexionMSG."</strong></p>"; } ?>
-
-<html>
-
-   <head>
-   
-      <title>CrÈation d'un formulaire de connexion en HTML</title>
-      
-   </head>
-   
-   <body>
-      
-      <h2>Connexion au site</h2>
-   
-      <form action="connexion.php" method="post">
-         
-         <table>
-            
-            <tr>
-               
-               <td><label for="pseudo"><strong>Nom de compte</strong></label></td>
-               <td><input type="text" name="pseudo" id="pseudo"/></td>
-               
-            </tr>
-            
-            <tr>
-               
-               <td><label for="passe"><strong>Mot de passe</strong></label></td>
-               <td><input type="password" name="passe" id="passe"/></td>
-               
-            </tr>
-            
-         </table>
-         
-         <input type="submit" name="connexion" value="Se connecter"/>
-      
-      </form>
-   
-   </body>
-   
-</html>
+$_SESSION['flash_success'] = 'Compte initialis√© avec succ√®s. Prochaine √©tape : compl√©ter le profil et v√©rifier vos contacts.';
+header('Location: dashboard.php');
+exit;
